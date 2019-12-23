@@ -1,9 +1,9 @@
 # SOURCE: https://github.com/clinicalml/cfrnet, MIT-License
-from __future__ import print_function
+
 
 import sys
 import numpy as np
-from util import *
+from .util import *
 import tensorflow as tf
 from perfect_match.models.pehe_loss import pehe_loss
 from perfect_match.models.model_eval import ModelEvaluation

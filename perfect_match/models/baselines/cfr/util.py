@@ -42,11 +42,11 @@ def validation_split(D_exp, val_fraction):
     if val_fraction > 0:
         n_valid = int(val_fraction*n)
         n_train = n-n_valid
-        I = np.random.permutation(range(0,n))
+        I = np.random.permutation(list(range(0,n)))
         I_train = I[:n_train]
         I_valid = I[n_train:]
     else:
-        I_train = range(n)
+        I_train = list(range(n))
         I_valid = []
 
     return I_train, I_valid
@@ -56,7 +56,7 @@ def log(logfile,str):
     """ Log a string in a file """
     with open(logfile,'a') as f:
         f.write(str+'\n')
-    print str
+    print(str)
 
 
 def save_config(fname):
@@ -264,7 +264,7 @@ def simplex_project(x,k):
     """ Projects a vector x onto the k-simplex """
     d = x.shape[0]
     mu = np.sort(x,axis=0)[::-1]
-    nu = (np.cumsum(mu)-k)/range(1,d+1)
+    nu = (np.cumsum(mu)-k)/list(range(1,d+1))
     I = [i for i in range(0,d) if mu[i]>nu[i]]
     theta = nu[I[-1]]
     w = np.maximum(x-theta,0)

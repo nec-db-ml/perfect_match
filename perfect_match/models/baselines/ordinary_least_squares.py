@@ -56,9 +56,8 @@ class OrdinaryLeastSquares2(PickleableMixin, Baseline):
             return y
 
     def predict(self, x):
-        return np.array(map(lambda idx: self.predict_for_model(self.model[x[1][idx]],
-                                                               [np.expand_dims(x[0][idx], axis=0), x[1][idx]]),
-                            np.arange(len(x[1]))))
+        return np.array([self.predict_for_model(self.model[x[1][idx]],
+                                                               [np.expand_dims(x[0][idx], axis=0), x[1][idx]]) for idx in np.arange(len(x[1]))])
 
     def fit_generator(self, train_generator, train_steps, val_generator, val_steps, num_epochs, batch_size):
         all_outputs = []
@@ -66,18 +65,18 @@ class OrdinaryLeastSquares2(PickleableMixin, Baseline):
             generator_output = next(train_generator)
             x, y = generator_output[0], generator_output[1]
             all_outputs.append((x, y))
-        x, y = zip(*all_outputs)
-        x = map(partial(np.concatenate, axis=0), zip(*x))
+        x, y = list(zip(*all_outputs))
+        x = list(map(partial(np.concatenate, axis=0), list(zip(*x))))
         y = np.concatenate(y, axis=0)
 
         treatment_xy = self.split_by_treatment(x, y)
-        for key in treatment_xy.keys():
+        for key in list(treatment_xy.keys()):
             x, y = treatment_xy[key]
             self.model[int(key)].fit(x, y)
 
     def split_by_treatment(self, x, y):
         treatment_xy = {}
         for i in range(len(self.model)):
-            indices = filter(lambda idx: x[1][idx] == i, np.arange(len(x[0])))
+            indices = [idx for idx in np.arange(len(x[0])) if x[1][idx] == i]
             treatment_xy[i] = (x[0][indices], y[indices])
         return treatment_xy

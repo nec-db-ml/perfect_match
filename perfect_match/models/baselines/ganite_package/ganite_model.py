@@ -15,7 +15,7 @@ THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABI
 CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 """
-from __future__ import print_function
+
 
 import sys
 import numpy as np
@@ -207,5 +207,5 @@ class GANITEModel(object):
             self.x: x[0],
             self.z_i: np.random.uniform(size=(batch_size, self.num_treatments))
         })
-        y_pred = np.array(map(lambda inner, idx: inner[idx], y_pred, x[1]))
+        y_pred = np.array(list(map(lambda inner, idx: inner[idx], y_pred, x[1])))
         return y_pred

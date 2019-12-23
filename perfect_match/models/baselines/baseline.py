@@ -69,7 +69,7 @@ class Baseline(object):
             generator_output = next(generator)
             x, y = generator_output[0], generator_output[1]
             all_outputs.append((self.preprocess(x), y))
-        return map(partial(np.concatenate, axis=0), zip(*all_outputs))
+        return list(map(partial(np.concatenate, axis=0), list(zip(*all_outputs))))
 
 
 class PickleableMixin(object):

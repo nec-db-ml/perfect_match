@@ -105,15 +105,15 @@ class CausalForest(PickleableMixin, Baseline):
             generator_output = next(train_generator)
             x, y = generator_output[0], generator_output[1]
             all_outputs.append((x, y))
-        x, y = zip(*all_outputs)
-        x = map(partial(np.concatenate, axis=0), zip(*x))
+        x, y = list(zip(*all_outputs))
+        x = list(map(partial(np.concatenate, axis=0), list(zip(*x))))
         y = np.concatenate(y, axis=0)
 
         treatment_xy = self.split_by_treatment(x, y)
         x_c, y_c = treatment_xy[0]
         self.model[0].fit(x_c, y_c)
 
-        for key in treatment_xy.keys():
+        for key in list(treatment_xy.keys()):
             if key == 0:
                 continue
 
@@ -125,6 +125,6 @@ class CausalForest(PickleableMixin, Baseline):
     def split_by_treatment(self, x, y):
         treatment_xy = {}
         for i in range(len(self.model)):
-            indices = filter(lambda idx: x[1][idx] == i, np.arange(len(x[0])))
+            indices = [idx for idx in np.arange(len(x[0])) if x[1][idx] == i]
             treatment_xy[i] = (x[0][indices], y[indices])
         return treatment_xy

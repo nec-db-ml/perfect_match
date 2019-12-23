@@ -15,7 +15,7 @@ THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABI
 CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 """
-from __future__ import print_function
+
 
 import os
 import sys
@@ -85,9 +85,9 @@ class DataAccess(BatchAugmentation):
 
     def initialise_data(self):
         with self.db:
-            self.insert_many(DataAccess.TABLE_JOBS, zip(self.x[:, 0], self.x[:, 1:],
+            self.insert_many(DataAccess.TABLE_JOBS, list(zip(self.x[:, 0], self.x[:, 1:],
                                                         self.y0, self.y1, self.z,
-                                                        self.e))
+                                                        self.e)))
 
     def setup_schema(self):
         self.setup_jobs()
@@ -144,7 +144,7 @@ class DataAccess(BatchAugmentation):
 
     def get_rows(self, train_ids, columns="rowid, x"):
         tmp_name = "tmp_pairs"
-        self.create_temporary_table(tmp_name, map(lambda x: (x,), train_ids))
+        self.create_temporary_table(tmp_name, [(x,) for x in train_ids])
 
         ihdp = self.db.execute("SELECT {columns} "
                                "FROM {table_pairs} "
@@ -156,8 +156,8 @@ class DataAccess(BatchAugmentation):
         self.drop_temporary_table(tmp_name)
 
         if columns == "rowid, x":
-            ids = np.array(map(lambda x: x[0], ihdp))
-            ihdp_data = map(lambda x: x[1], ihdp)
+            ids = np.array([x[0] for x in ihdp])
+            ihdp_data = [x[1] for x in ihdp]
             ihdp_data = np.array(ihdp_data)
             return ihdp_data, ids, ihdp_data
         else:
@@ -197,11 +197,11 @@ class DataAccess(BatchAugmentation):
         return entry
 
     def prepare_batch(self, args, batch_data, benchmark, is_train=False):
-        ids = np.array(map(lambda x: x["id"], batch_data))
-        ihdp_data = map(lambda x: x["x"], batch_data)
+        ids = np.array([x["id"] for x in batch_data])
+        ihdp_data = [x["x"] for x in batch_data]
 
-        assignments = map(benchmark.get_assignment, ids, ihdp_data)
-        treatment_data, batch_y = zip(*assignments)
+        assignments = list(map(benchmark.get_assignment, ids, ihdp_data))
+        treatment_data, batch_y = list(zip(*assignments))
         treatment_data = np.array(treatment_data)
 
         if args["with_propensity_batch"] and is_train:

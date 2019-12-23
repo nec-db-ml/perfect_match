@@ -15,7 +15,7 @@ THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABI
 CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 """
-from __future__ import print_function
+
 
 import numpy as np
 from perfect_match.models.baselines.neural_network import NeuralNetwork
@@ -50,13 +50,13 @@ class PSM_PBM(NeuralNetwork):
             all_y.append(y)
             all_ids.append(get_last_id_set())
 
-        x, t, y, ids = np.concatenate(map(lambda x: x[0], all_x), axis=0), \
-                       np.concatenate(map(lambda x: x[1], all_x), axis=0), \
+        x, t, y, ids = np.concatenate([x[0] for x in all_x], axis=0), \
+                       np.concatenate([x[1] for x in all_x], axis=0), \
                        np.concatenate(all_y, axis=0), \
                        np.concatenate(all_ids, axis=0)
 
-        t_indices = map(lambda t_idx: np.where(t == t_idx)[0], range(self.num_treatments))
-        t_lens = map(lambda x: len(x), t_indices)
+        t_indices = [np.where(t == t_idx)[0] for t_idx in range(self.num_treatments)]
+        t_lens = [len(x) for x in t_indices]
 
         self.batch_augmentation.make_propensity_lists(ids, self.benchmark, **self.args)
 
@@ -81,7 +81,7 @@ class PSM_PBM(NeuralNetwork):
 
         def inner_generator(wrapped_generator):
             while True:
-                batch_data = zip(*map(lambda _: next(wrapped_generator), range(self.batch_size)))
+                batch_data = list(zip(*[next(wrapped_generator) for _ in range(self.batch_size)]))
                 yield [np.array(batch_data[0]), np.array(batch_data[1])], np.array(batch_data[2])
 
         new_generator = inner_generator(outer_generator())

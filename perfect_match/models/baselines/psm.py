@@ -15,7 +15,7 @@ THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABI
 CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 """
-from __future__ import print_function
+
 
 import sys
 import numpy as np
@@ -71,8 +71,8 @@ class PSM(NeuralNetwork):
             all_x.append(x)
             all_y.append(y)
 
-        x, t, y = np.concatenate(map(lambda x: x[0], all_x), axis=0), \
-                  np.concatenate(map(lambda x: x[1], all_x), axis=0), \
+        x, t, y = np.concatenate([x[0] for x in all_x], axis=0), \
+                  np.concatenate([x[1] for x in all_x], axis=0), \
                   np.concatenate(all_y, axis=0)
 
         num_features = x.shape[-1]
@@ -82,8 +82,8 @@ class PSM(NeuralNetwork):
         env['x'] = x
         env['t'] = t
 
-        t_indices = map(lambda t_idx: np.where(t == t_idx)[0], range(self.num_treatments))
-        t_lens = map(lambda x: len(x), t_indices)
+        t_indices = [np.where(t == t_idx)[0] for t_idx in range(self.num_treatments)]
+        t_lens = [len(x) for x in t_indices]
 
         undersample = True
         base_treatment_idx = np.argmin(t_lens) if undersample else np.argmax(t_lens)
@@ -133,7 +133,7 @@ class PSM(NeuralNetwork):
 
         def inner_generator(wrapped_generator):
             while True:
-                batch_data = zip(*map(lambda _: next(wrapped_generator), range(self.batch_size)))
+                batch_data = list(zip(*[next(wrapped_generator) for _ in range(self.batch_size)]))
                 yield [np.array(batch_data[0]), np.array(batch_data[1])], np.array(batch_data[2])
 
         new_generator = inner_generator(outer_generator())
