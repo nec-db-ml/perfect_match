@@ -15,7 +15,7 @@ THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABI
 CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 """
-from __future__ import print_function
+
 
 import sys
 import numpy as np
@@ -472,8 +472,8 @@ class ModelEvaluation(object):
                     result = (model_output, labels_batch[not_none_indices, treatment_idx])
                 treatment_outputs.append(result)
 
-            y_pred = np.column_stack(map(lambda x: x[0], treatment_outputs))
-            y_true = np.column_stack(map(lambda x: x[1], treatment_outputs))
+            y_pred = np.column_stack([x[0] for x in treatment_outputs])
+            y_true = np.column_stack([x[1] for x in treatment_outputs])
 
             all_outputs.append((y_pred, y_true))
             all_x.append(batch_input[0])
@@ -578,7 +578,7 @@ class ModelEvaluation(object):
                     list_score_dicts_pehe.append(score_dict_pehe)
 
             score_dict_pehe = {}
-            for key in list_score_dicts_pehe[0].keys():
+            for key in list(list_score_dicts_pehe[0].keys()):
                 all_values = [list_score_dicts_pehe[i][key] for i in range(len(list_score_dicts_pehe))]
                 score_dict_pehe[key] = np.mean(all_values)
                 score_dict_pehe[key + "_std"] = np.std(all_values)

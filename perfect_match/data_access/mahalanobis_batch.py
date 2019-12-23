@@ -15,11 +15,12 @@ THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABI
 CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 """
-from __future__ import print_function
+
 
 import numpy as np
 from sklearn.decomposition import PCA
 from sklearn.neighbors import BallTree
+from functools import reduce
 
 
 class MahalanobisBatch(object):
@@ -28,8 +29,8 @@ class MahalanobisBatch(object):
 
     def make_propensity_lists(self, train_ids, benchmark):
         input_data, ids, pair_data = benchmark.get_data_access().get_rows(train_ids)
-        assignments = map(benchmark.get_assignment, ids, input_data)
-        treatment_data, batch_y = zip(*assignments)
+        assignments = list(map(benchmark.get_assignment, ids, input_data))
+        treatment_data, batch_y = list(zip(*assignments))
         treatment_data = np.array(treatment_data)
 
         if pair_data.shape[-1] > 200 and False:
@@ -68,20 +69,17 @@ class MahalanobisBatch(object):
         all_matches = []
         for treatment_idx in range(benchmark.get_num_treatments()):
             this_treatment_indices = np.where(treatment_data == treatment_idx)[0]
-            matches = map(lambda t:
-                          map(lambda idx: self.get_closest_in_propensity_lists(input_data[idx], t,
-                                                                               k=num_randomised_neighbours),
-                              this_treatment_indices),
-                          [t_idx for t_idx in range(benchmark.get_num_treatments())
-                           if t_idx != treatment_idx])
+            matches = [[self.get_closest_in_propensity_lists(input_data[idx], t,
+                                                                               k=num_randomised_neighbours) for idx in this_treatment_indices] for t in [t_idx for t_idx in range(benchmark.get_num_treatments())
+                           if t_idx != treatment_idx]]
 
             if len(matches) != 0:
                 all_matches += reduce(lambda x, y: x + y, matches)
 
         if match_probability != 1.0:
             all_matches = np.random.permutation(all_matches)[:int(len(all_matches)*match_probability)]
-        match_ids = map(lambda x: x[1], all_matches)
-        all_matches = np.array(map(lambda x: x[0], all_matches))
+        match_ids = [x[1] for x in all_matches]
+        all_matches = np.array([x[0] for x in all_matches])
 
         from perfect_match.models.benchmarks.twins_benchmark import TwinsBenchmark
         if isinstance(benchmark, TwinsBenchmark):
@@ -91,8 +89,8 @@ class MahalanobisBatch(object):
 
         # match_input_data = match_input_data + np.random.normal(0, 0.1, size=match_input_data.shape)
 
-        match_assignments = map(benchmark.get_assignment, match_ids, all_matches)
-        match_treatment_data, match_batch_y = zip(*match_assignments)
+        match_assignments = list(map(benchmark.get_assignment, match_ids, all_matches))
+        match_treatment_data, match_batch_y = list(zip(*match_assignments))
 
         return np.concatenate([input_data, match_input_data], axis=0),\
                np.concatenate([treatment_data, match_treatment_data], axis=0),\

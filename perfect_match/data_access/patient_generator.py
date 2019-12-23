@@ -55,7 +55,7 @@ def make_generator(args, benchmark, is_validation=False, is_test=False,
 
     split_indices = benchmark.get_data_access().get_split_indices()
     if stratify:
-        labels, num_labels = benchmark.get_data_access().get_labels(args, map(lambda x: (x,), patients), benchmark)
+        labels, num_labels = benchmark.get_data_access().get_labels(args, [(x,) for x in patients], benchmark)
         if split_indices[0] is None:
             test_sss = StratifiedShuffleSplit(n_splits=1, test_size=num_test_patients, random_state=seed)
             rest_indices, test_indices = next(test_sss.split(patients, labels))

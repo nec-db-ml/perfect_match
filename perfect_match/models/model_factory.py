@@ -24,7 +24,7 @@ from keras.models import model_from_json
 from keras.callbacks import ModelCheckpoint
 
 if sys.version_info < (3, 0, 0):
-    import cPickle as pickle
+    import pickle as pickle
 else:
     import pickle
 

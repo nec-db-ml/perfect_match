@@ -15,10 +15,10 @@ THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABI
 CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 """
-from __future__ import print_function
 
-from mahalanobis_batch import MahalanobisBatch
-from propensity_batch import PropensityBatch
+
+from .mahalanobis_batch import MahalanobisBatch
+from .propensity_batch import PropensityBatch
 
 
 class BatchAugmentation(object):

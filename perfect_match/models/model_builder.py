@@ -131,8 +131,8 @@ class ModelBuilder(object):
         def do_dynamic_stitch(x):
             num_tensors = len(x)
 
-            data_indices = map(tf.to_int32, x[:num_tensors / 2])
-            data = map(tf.to_float, x[num_tensors / 2:])
+            data_indices = list(map(tf.to_int32, x[:num_tensors / 2]))
+            data = list(map(tf.to_float, x[num_tensors / 2:]))
 
             stitched = tf.dynamic_stitch(data_indices, data)
             return K.reshape(stitched, (-1, 1))
@@ -239,8 +239,8 @@ class ModelBuilder(object):
         def do_dynamic_stitch(x):
             num_tensors = len(x)
 
-            data_indices = map(tf.to_int32, x[:num_tensors/2])
-            data = map(tf.to_float, x[num_tensors/2:])
+            data_indices = list(map(tf.to_int32, x[:num_tensors/2]))
+            data = list(map(tf.to_float, x[num_tensors/2:]))
 
             stitched = tf.dynamic_stitch(data_indices, data)
             return stitched

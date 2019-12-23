@@ -15,7 +15,7 @@ THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABI
 CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 """
-from __future__ import print_function
+
 
 import glob
 import os
@@ -262,7 +262,7 @@ class EvaluationApplication(object):
     @staticmethod
     def get_random_hyperopt_parameters(initial_args, hyperopt_parameters, hyperopt_index):
         new_params = dict(initial_args)
-        for k, v in hyperopt_parameters.iteritems():
+        for k, v in hyperopt_parameters.items():
             if isinstance(v, list):
                 min_val, max_val = v
                 new_params[k] = np.random.uniform(min_val, max_val)
@@ -342,9 +342,9 @@ class EvaluationApplication(object):
 
             print("INFO: Best_test_score:", test_score_dicts[self.best_score_index], file=sys.stderr)
 
-            for key in score_dicts[0].keys():
+            for key in list(score_dicts[0].keys()):
                 try:
-                    values = map(lambda x: x[key], score_dicts)
+                    values = [x[key] for x in score_dicts]
                     print(key, "=", np.mean(values), np.std(values),
                           "(", np.percentile(values, 2.5), ",", np.percentile(values, 97.5), "),",
                           "median=", np.median(values),

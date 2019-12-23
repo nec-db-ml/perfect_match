@@ -15,7 +15,7 @@ THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABI
 CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 """
-from __future__ import print_function
+
 
 import numpy as np
 from keras.utils import to_categorical
@@ -39,8 +39,7 @@ def make_keras_generator(args, wrapped_generator, num_steps,
     def generator():
         global LAST_ID_SET
         while True:
-            batch_data, ids = zip(*map(lambda _: (next(wrapped_generator), get_last_row_id()),
-                                       range(batch_size)))
+            batch_data, ids = list(zip(*[(next(wrapped_generator), get_last_row_id()) for _ in range(batch_size)]))
 
             LAST_ID_SET = ids
 
