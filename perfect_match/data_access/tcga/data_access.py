@@ -24,6 +24,7 @@ from os.path import join
 from pandas import read_csv
 from perfect_match.data_access.batch_augmentation import BatchAugmentation
 
+sqlite3.register_adapter(np.int64, lambda val: int(val))
 
 def adapt_array(arr):
     """
