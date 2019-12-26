@@ -172,8 +172,11 @@ class TwinsBenchmark(object):
             return treatment_chosen, y
 
     def get_centroid_weights(self, x):
-        similarities = [cosine_similarity(self.data_access.standardise_entry(
+        similarities = map(
+            lambda centroid: cosine_similarity(self.data_access.standardise_entry(
                                                    np.array(x[7:], dtype="float32")
                                                ).reshape((1, -1)),
-                                               centroid.reshape((1, -1))) for centroid in [x[0] for x in self.centroids]]
+                                               centroid.reshape((1, -1))),
+            map(lambda x: x[0], self.centroids)
+        )
         return np.squeeze(similarities)

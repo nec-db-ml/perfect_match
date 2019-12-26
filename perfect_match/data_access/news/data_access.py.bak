@@ -106,7 +106,7 @@ class DataAccess(BatchAugmentation):
 
     def get_rows(self, train_ids):
         tmp_name = "tmp_pairs"
-        self.create_temporary_table(tmp_name, [(x,) for x in train_ids])
+        self.create_temporary_table(tmp_name, map(lambda x: (x,), train_ids))
 
         news = self.db.execute("SELECT rowid, * "
                                "FROM {table_pairs} "
@@ -116,8 +116,8 @@ class DataAccess(BatchAugmentation):
 
         self.drop_temporary_table(tmp_name)
 
-        ids = np.array([x[0] for x in news])
-        news_data = [x[1] for x in news]
+        ids = np.array(map(lambda x: x[0], news))
+        news_data = map(lambda x: x[1], news)
         news_data = np.array(news_data)
         return news_data, ids, news_data
 
@@ -172,11 +172,11 @@ class DataAccess(BatchAugmentation):
         return entry
 
     def prepare_batch(self, args, batch_data, benchmark, is_train=False):
-        ids = np.array([x["id"] for x in batch_data])
-        news_data = [x["x"] for x in batch_data]
+        ids = np.array(map(lambda x: x["id"], batch_data))
+        news_data = map(lambda x: x["x"], batch_data)
 
-        assignments = list(map(benchmark.get_assignment, ids, news_data))
-        treatment_data, batch_y = list(zip(*assignments))
+        assignments = map(benchmark.get_assignment, ids, news_data)
+        treatment_data, batch_y = zip(*assignments)
         treatment_data = np.array(treatment_data)
 
         if args["with_propensity_batch"] and is_train:

@@ -173,8 +173,8 @@ class TCGABenchmark(object):
         return treatment_chosen, 50*y
 
     def get_centroid_weights(self, x):
-        similarities = map(lambda indices, centroid: cosine_similarity(x[indices].reshape(1, -1),
+        similarities = list(map(lambda indices, centroid: cosine_similarity(x[indices].reshape(1, -1),
                                                                        centroid.reshape(1, -1)),
-                           map(lambda x: x[0], self.centroids),
-                           map(lambda x: x[1], self.centroids))
+                           [x[0] for x in self.centroids],
+                           [x[1] for x in self.centroids]))
         return np.squeeze(similarities)

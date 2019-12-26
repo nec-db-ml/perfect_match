@@ -158,6 +158,9 @@ class NewsBenchmark(object):
         return treatment_chosen, 50*y
 
     def get_centroid_weights(self, x):
-        similarities = [euclidean_distances(self.data_access.standardise_entry(x).reshape((1, -1)),
-                                                 centroid.reshape((1, -1))) for centroid in [x[0] for x in self.centroids]]
+        similarities = map(
+            lambda centroid: euclidean_distances(self.data_access.standardise_entry(x).reshape((1, -1)),
+                                                 centroid.reshape((1, -1))),
+            map(lambda x: x[0], self.centroids)
+        )
         return np.squeeze(similarities)

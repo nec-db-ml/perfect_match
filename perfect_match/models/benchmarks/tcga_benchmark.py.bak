@@ -15,42 +15,46 @@ THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABI
 CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 """
-import math
 import numpy as np
 from perfect_match.apps.parameters import clip_percentage
-from sklearn.metrics.pairwise import euclidean_distances
-from perfect_match.data_access.news.data_access import DataAccess
-from perfect_match.models.benchmarks.tcga_benchmark import TCGABenchmark
+from sklearn.metrics.pairwise import cosine_similarity
+from perfect_match.data_access.generator import get_last_id_set
+from perfect_match.data_access.tcga.data_access import DataAccess
 
 
-class NewsBenchmark(object):
-    def __init__(self, data_dir,
+class TCGABenchmark(object):
+    def __init__(self, data_dir, num_treatments=2,
+                 num_centroids_mean=7, num_centroids_std=2,
+                 num_relevant_gene_loci_mean=10, num_relevant_gene_loci_std=3,
                  response_mean_of_mean=0.45, response_std_of_mean=0.15,
                  response_mean_of_std=0.1, response_std_of_std=0.05,
                  strength_of_assignment_bias=10, epsilon_std=0.15,
-                 num_samples=5000, num_treatments=16,
                  **kwargs):
         self.centroids = None
-        self.data_access = DataAccess(data_dir)
+        self.data_access = DataAccess(data_dir, **kwargs)
         self.assignment_cache = {}
-        self.assign_counterfactuals = False
         self.num_treatments = num_treatments
+        self.num_centroids_mean = num_centroids_mean
+        self.num_centroids_std = num_centroids_std
+        self.num_relevant_gene_loci_mean = num_relevant_gene_loci_mean
+        self.num_relevant_gene_loci_std = num_relevant_gene_loci_std
         self.response_mean_of_mean = response_mean_of_mean
         self.response_std_of_mean = response_std_of_mean
         self.response_mean_of_std = response_mean_of_std
         self.response_std_of_std = response_std_of_std
         self.strength_of_assignment_bias = strength_of_assignment_bias
         self.epsilon_std = epsilon_std
+        self.assign_counterfactuals = False
         self.seed = kwargs["seed"]
         self.random_generator = None
-        self.num_samples = num_samples
+        self.num_features = int(np.rint(kwargs["tcga_num_features"]))
 
     @staticmethod
     def get_db_file_name():
         return DataAccess.DB_FILE_NAME
 
     def filter(self, patients):
-        return self.random_generator.choice(patients, size=self.num_samples, replace=False)
+        return patients
 
     def set_assign_counterfactuals(self, value):
         self.assign_counterfactuals = value
@@ -62,18 +66,26 @@ class NewsBenchmark(object):
         return self.data_access
 
     def get_input_shapes(self, args):
-        return (self.data_access.get_news_dimension(),)
+        if self.num_features > 0:
+            return (self.num_features,)
+        else:
+            return (self.data_access.get_rnaseq_dimension(),)
 
     def get_output_shapes(self, args):
         return (1,)
 
-    def initialise(self, args, seed=909):
-        self.random_generator = np.random.RandomState(seed)
+    def initialise(self, args):
+        self.random_generator = np.random.RandomState(909)
         self.centroids = None
 
-    def fit(self, generator, steps, batch_size):
-        from perfect_match.data_access.generator import get_last_id_set
+        all_features = self.data_access.get_rnaseq_dimension()
+        if self.num_features > 0 and self.num_features != all_features:
+            self.selected_features = self.random_generator.choice(self.data_access.get_rnaseq_dimension(),
+                                                                  self.num_features, replace=False)
+        else:
+            self.selected_features = np.arange(all_features)
 
+    def fit(self, generator, steps, batch_size):
         centroids_tmp = []
         centroid_indices = sorted(self.random_generator.permutation(steps*batch_size)[:self.num_treatments + 1])
 
@@ -97,11 +109,11 @@ class NewsBenchmark(object):
                                                                              self.response_std_of_mean))
                 response_std = clip_percentage(self.random_generator.normal(self.response_mean_of_std,
                                                                             self.response_std_of_std))
+                gene_loci_indices = np.arange(len(x[0][next_index]))
 
-                id, data = self.data_access.get_entry_with_id(ids[next_index])
-                z = data["z"]
+                rnaseq_data = self.data_access.get_entry_with_id(ids[next_index])[1]["rnaseq"][1]
 
-                centroids_tmp.append((z, response_mean, response_std))
+                centroids_tmp.append((gene_loci_indices, rnaseq_data[gene_loci_indices], response_mean, response_std))
             current_idx += len(x[0])
         self.centroids = centroids_tmp
         self.assignment_cache = {}
@@ -111,9 +123,8 @@ class NewsBenchmark(object):
             return 0, 0
 
         if id not in self.assignment_cache:
-            id, data = self.data_access.get_entry_with_id(id)
-            z = data["z"]
-            assigned_treatment, assigned_y = self._assign(z)
+            rnaseq_data = self.data_access.get_entry_with_id(id)[1]["rnaseq"][1]
+            assigned_treatment, assigned_y = self._assign(rnaseq_data)
             self.assignment_cache[id] = assigned_treatment, assigned_y
 
         assigned_treatment, assigned_y = self.assignment_cache[id]
@@ -124,8 +135,12 @@ class NewsBenchmark(object):
             return assigned_treatment, assigned_y[assigned_treatment]
 
     @staticmethod
-    def sigmoid(x):
-        return 1 / (1 + math.exp(-x))
+    def stable_softmax(x):
+        e_x = np.exp(x - np.max(x))
+        return e_x / e_x.sum(axis=0)
+
+    def select_features(self, x):
+        return x[:, self.selected_features]
 
     def _assign(self, x):
         # Assignment should be biased towards treatments that help more.
@@ -135,7 +150,7 @@ class NewsBenchmark(object):
 
         expected_responses = []
         for treatment in range(self.num_treatments + 1):
-            _, response_mean, response_std = self.centroids[treatment]
+            _, _, response_mean, response_std = self.centroids[treatment]
             y_this_treatment = self.random_generator.normal(response_mean, response_std)
             expected_responses.append(
                 clip_percentage(y_this_treatment + self.random_generator.normal(0.0, self.epsilon_std))
@@ -158,6 +173,8 @@ class NewsBenchmark(object):
         return treatment_chosen, 50*y
 
     def get_centroid_weights(self, x):
-        similarities = [euclidean_distances(self.data_access.standardise_entry(x).reshape((1, -1)),
-                                                 centroid.reshape((1, -1))) for centroid in [x[0] for x in self.centroids]]
+        similarities = map(lambda indices, centroid: cosine_similarity(x[indices].reshape(1, -1),
+                                                                       centroid.reshape(1, -1)),
+                           map(lambda x: x[0], self.centroids),
+                           map(lambda x: x[1], self.centroids))
         return np.squeeze(similarities)

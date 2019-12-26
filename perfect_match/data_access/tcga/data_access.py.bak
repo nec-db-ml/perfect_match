@@ -216,7 +216,7 @@ class DataAccess(BatchAugmentation):
 
     def get_rows(self, train_ids):
         tmp_name = "tmp_data"
-        self.create_temporary_table(tmp_name, [(x,) for x in train_ids])
+        self.create_temporary_table(tmp_name, map(lambda x: (x,), train_ids))
 
         patients = self.db.execute("SELECT rowid, * "
                                    "FROM {table_pairs} "
@@ -226,11 +226,11 @@ class DataAccess(BatchAugmentation):
 
         self.drop_temporary_table(tmp_name)
 
-        patient_rowids = [x[0] for x in patients]
-        patient_ids = [x[1] for x in patients]
+        patient_rowids = map(lambda x: x[0], patients)
+        patient_ids = map(lambda x: x[1], patients)
 
         tmp_name = "patient_ids"
-        self.create_temporary_table(tmp_name, [(x,) for x in patient_ids])
+        self.create_temporary_table(tmp_name, map(lambda x: (x,), patient_ids))
 
         rnaseq_data = self.db.execute("SELECT * " \
                                       "FROM {table_name} " \
@@ -245,8 +245,8 @@ class DataAccess(BatchAugmentation):
             clinical_id = sample[-1]
             id_seq_map[clinical_id] = sample
 
-        rnaseq_data = [id_seq_map[id] for id in patient_ids]
-        rnaseq_data = np.array([x[1] for x in rnaseq_data])
+        rnaseq_data = map(lambda id: id_seq_map[id], patient_ids)
+        rnaseq_data = np.array(map(lambda x: x[1], rnaseq_data))
         rnaseq_data = (rnaseq_data - self.min_val) / (self.max_val - self.min_val + 0.00001)
 
         return rnaseq_data, patient_rowids, rnaseq_data
@@ -341,7 +341,7 @@ class DataAccess(BatchAugmentation):
             names = self.get_dataset_names(patients)
             unique_names = set(names)
             num_names = len(unique_names)
-            name_mapping = dict(list(zip(unique_names, list(range(len(unique_names))))))
+            name_mapping = dict(zip(unique_names, range(len(unique_names))))
 
             deaths = DataAccess.binarize_days(self.get_days_to_death(patients))
             recurrences = DataAccess.binarize_days(self.get_days_to_recurrence(patients))
@@ -375,17 +375,17 @@ class DataAccess(BatchAugmentation):
         CLINICAL_INDEX_SURGERY = -2
         INDEX_DEATH, INDEX_RECURRENCE = 6, 7
 
-        patient_ids = np.array([x["clinical"][0] for x in batch_data])
-        rnaseq_data = np.array([x["rnaseq"][1] for x in batch_data])
+        patient_ids = np.array(map(lambda x: x["clinical"][0], batch_data))
+        rnaseq_data = np.array(map(lambda x: x["rnaseq"][1], batch_data))
         rnaseq_data = (rnaseq_data - self.min_val) / (self.max_val - self.min_val + 0.00001)
 
         if benchmark is None:
-            treatment_data = np.array([x["clinical"][CLINICAL_INDEX_RADIATION] for x in batch_data]) * 2 ** 0 + \
-                             np.array([x["clinical"][CLINICAL_INDEX_SURGERY] != -1 for x in batch_data]) * 2 ** 1
-            batch_y = [x["clinical"][INDEX_DEATH] != -1 for x in batch_data]
+            treatment_data = np.array(map(lambda x: x["clinical"][CLINICAL_INDEX_RADIATION], batch_data)) * 2 ** 0 + \
+                             np.array(map(lambda x: x["clinical"][CLINICAL_INDEX_SURGERY] != -1, batch_data)) * 2 ** 1
+            batch_y = map(lambda x: x["clinical"][INDEX_DEATH] != -1, batch_data)
         else:
-            assignments = list(map(benchmark.get_assignment, patient_ids, rnaseq_data))
-            treatment_data, batch_y = list(zip(*assignments))
+            assignments = map(benchmark.get_assignment, patient_ids, rnaseq_data)
+            treatment_data, batch_y = zip(*assignments)
             treatment_data = np.array(treatment_data)
 
         if tcga_num_features > 0:
