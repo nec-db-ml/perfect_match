@@ -27,8 +27,8 @@ from perfect_match.data_access.batch_augmentation import BatchAugmentation
 sqlite3.register_adapter(np.int64, lambda val: int(val))
 
 class DataAccess(BatchAugmentation):
-    DB_FILE_NAME = "jobs.db"
-    TABLE_JOBS = "jobs"
+    DB_FILE_NAME = "sgemm.db"
+    TABLE_SGEMM = "sgemm"
 
     def __init__(self, data_dir, seed, experiment_index):
         self.data_dir = data_dir
@@ -44,8 +44,8 @@ class DataAccess(BatchAugmentation):
 
     def generate_new_dataset(self, seed, experiment_index):
         this_directory = os.path.dirname(os.path.realpath(__file__))
-        train_file_path = join(this_directory, "jobs_DW_bin.train.npz")
-        test_file_path = join(this_directory, "jobs_DW_bin.test.npz")
+        train_file_path = join(this_directory, "sgemm_DW_bin.train.npz")
+        test_file_path = join(this_directory, "sgemm_DW_bin.test.npz")
 
         print("INFO: Using Jobs set", experiment_index, ".", file=sys.stderr)
         train_set = np.load(train_file_path)
@@ -86,15 +86,15 @@ class DataAccess(BatchAugmentation):
 
     def initialise_data(self):
         with self.db:
-            self.insert_many(DataAccess.TABLE_JOBS, list(zip(self.x[:, 0], self.x[:, 1:],
+            self.insert_many(DataAccess.TABLE_SGEMM, list(zip(self.x[:, 0], self.x[:, 1:],
                                                         self.y0, self.y1, self.z,
                                                         self.e)))
 
     def setup_schema(self):
-        self.setup_jobs()
+        self.setup_sgemm()
         self.db.commit()
 
-    def setup_jobs(self):
+    def setup_sgemm(self):
         self.db.execute(("CREATE TABLE IF NOT EXISTS {table_name}"
                          "("
                          "id INT NOT NULL PRIMARY KEY, "
@@ -103,7 +103,7 @@ class DataAccess(BatchAugmentation):
                          "y1 FLOAT, "
                          "t INT, "
                          "e INT "
-                         ");").format(table_name=DataAccess.TABLE_JOBS))
+                         ");").format(table_name=DataAccess.TABLE_SGEMM))
 
     def insert_many(self, table_name, values):
         self.db.executemany("INSERT INTO {table_name} VALUES ({question_marks});"
@@ -112,7 +112,7 @@ class DataAccess(BatchAugmentation):
                             values)
 
     def insert_ihdp(self, values):
-        self.insert_many(DataAccess.TABLE_JOBS, values)
+        self.insert_many(DataAccess.TABLE_SGEMM, values)
 
     def get_column(self, table_name, ids, column_name):
         tmp_name = "tmp_ids"
@@ -151,7 +151,7 @@ class DataAccess(BatchAugmentation):
                                "FROM {table_pairs} "
                                "WHERE rowid IN (SELECT id FROM {tmp_table});"
                                .format(columns=columns,
-                                       table_pairs=DataAccess.TABLE_JOBS,
+                                       table_pairs=DataAccess.TABLE_SGEMM,
                                        tmp_table=tmp_name)).fetchall()
 
         self.drop_temporary_table(tmp_name)
@@ -165,7 +165,7 @@ class DataAccess(BatchAugmentation):
             return ihdp
 
     def get_labelled_patients(self):
-        return np.arange(1, self.get_num_rows(DataAccess.TABLE_JOBS) + 1)
+        return np.arange(1, self.get_num_rows(DataAccess.TABLE_SGEMM) + 1)
 
     def create_temporary_table(self, table_name, values):
         self.db.execute("CREATE TEMP TABLE {table_name} (id INT);".format(table_name=table_name))
@@ -179,7 +179,7 @@ class DataAccess(BatchAugmentation):
     def get_labels(self, args, ids, benchmark):
         assignments = []
         for id in ids:
-            ihdp = self.get_row(DataAccess.TABLE_JOBS, id[0], with_rowid=True)
+            ihdp = self.get_row(DataAccess.TABLE_SGEMM, id[0], with_rowid=True)
             assignment = benchmark.get_assignment(id[0], ihdp[1])[0]
             assignments.append(assignment)
         assignments = np.array(assignments)
@@ -187,7 +187,7 @@ class DataAccess(BatchAugmentation):
         return assignments, num_labels
 
     def get_entry_with_id(self, id, args):
-        ihdp = self.get_row(DataAccess.TABLE_JOBS, id, with_rowid=True)
+        ihdp = self.get_row(DataAccess.TABLE_SGEMM, id, with_rowid=True)
 
         patient_id = ihdp[0]
         result = {"id": patient_id, "x": ihdp[1]}
