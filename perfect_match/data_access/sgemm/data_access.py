@@ -47,7 +47,7 @@ class DataAccess(BatchAugmentation):
         train_file_path = join(this_directory, "sgemm_DW_bin.train.npz")
         test_file_path = join(this_directory, "sgemm_DW_bin.test.npz")
 
-        print("INFO: Using Jobs set", experiment_index, ".", file=sys.stderr)
+        print("INFO: Using SGEMM set", experiment_index, ".", file=sys.stderr)
         train_set = np.load(train_file_path)
         test_set = np.load(test_file_path)
 
